@@ -3,15 +3,15 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"expvar"
+	"flag"
+	"fmt"
 	"log"
 	"net"
 	"strings"
-
-	"flag"
-	"fmt"
-	"github.com/secmask/go-redisproto"
-	"sync/atomic"
 	"time"
+
+	"github.com/secmask/go-redisproto"
 )
 
 var (
@@ -20,8 +20,8 @@ var (
 	message   = []byte("message")
 	subscribe = []byte("subscribe")
 
-	pubCommand int64
-	pubRate    int64
+	statisticsSnapshot = expvar.NewMap("statistic")
+	statisticsSecond   string
 )
 
 type Client struct {
@@ -39,8 +39,8 @@ func init() {
 	go func() {
 		c := time.NewTicker(time.Second)
 		for range c.C {
-			pubRate = atomic.LoadInt64(&pubCommand)
-			atomic.StoreInt64(&pubCommand, 0)
+			statisticsSecond = statisticsSnapshot.String()
+			statisticsSnapshot.Init()
 		}
 	}()
 }
@@ -127,13 +127,13 @@ func (c *Client) handlePublish(command *redisproto.Command) (err error) {
 	b.Send(temBuff.Bytes())
 	err = c.redisWriter.WriteInt(1)
 	err = c.redisWriter.Flush()
-	atomic.AddInt64(&pubCommand, 1)
+	statisticsSnapshot.Add(sc, 1)
 	return
 }
 
 func (c *Client) handleInfo() error {
 	cs := c.broadcast.Channels()
-	c.redisWriter.WriteBulkString(fmt.Sprintf("channels: %v\nPublishRate: %d\n", cs, pubRate))
+	c.redisWriter.WriteBulkString(fmt.Sprintf("channels: %v\nPublishRates: %s\n", cs, statisticsSecond))
 	return c.redisWriter.Flush()
 }
 

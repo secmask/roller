@@ -5,10 +5,8 @@ import (
 	"log"
 	"net"
 	"os"
-	_ "net/http/pprof"
 
 	"gopkg.in/natefinch/lumberjack.v2"
-	"net/http"
 )
 
 var (
@@ -50,8 +48,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	go http.ListenAndServe(":8080",nil)
 
 	for {
 		conn, err := listener.Accept()
