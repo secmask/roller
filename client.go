@@ -101,7 +101,7 @@ func (c *Client) handleSubscribed(command *redisproto.Command) (err error) {
 	go c.handleBroadcastData()
 	c.currentSubChannel.AddReceiver(c)
 	var count int64 = 1
-	c.redisWriter.WriteObjects([]interface{}{subscribe, command.Get(1), count})
+	c.redisWriter.WriteObjects(subscribe, command.Get(1), count)
 	err = c.redisWriter.Flush()
 	return
 }
@@ -120,9 +120,10 @@ func (c *Client) handlePublish(command *redisproto.Command) (err error) {
 		return
 	}
 
-	temBuff := bytes.NewBuffer(make([]byte, 0, 4096))
+	temBuff := bytes.NewBuffer(make([]byte, 0, 2048))
+	temBuff.Cap()
 	rWriter := redisproto.NewWriter(temBuff)
-	rWriter.WriteObjects([]interface{}{message, command.Get(1), data})
+	rWriter.WriteBulks(message, command.Get(1), data)
 	b := c.broadcast.GetOrCreate(sc)
 	b.Send(temBuff.Bytes())
 	err = c.redisWriter.WriteInt(1)
