@@ -74,6 +74,7 @@ func (c *Client) Overflow() {
 }
 
 func (c *Client) handleBroadcastData() {
+	t := time.NewTicker(time.Millisecond * 200)
 out:
 	for {
 		select {
@@ -81,7 +82,14 @@ out:
 			break out
 		case data := <-c.eventChan:
 			_, fErr := c.redisWriter.Write(data.([]byte))
-			if fErr = c.redisWriter.Flush(); fErr != nil {
+			if fErr != nil {
+				break out
+			}
+			/*if fErr = c.redisWriter.Flush(); fErr != nil {
+				break out
+			}*/
+		case <-t.C:
+			if fErr := c.redisWriter.Flush(); fErr != nil {
 				break out
 			}
 		}
