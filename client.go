@@ -85,9 +85,6 @@ out:
 			if fErr != nil {
 				break out
 			}
-			/*if fErr = c.redisWriter.Flush(); fErr != nil {
-				break out
-			}*/
 		case <-t.C:
 			if fErr := c.redisWriter.Flush(); fErr != nil {
 				break out
@@ -95,7 +92,6 @@ out:
 		}
 	}
 	log.Printf("End push to session %s for client %s\n", c.subChanName, c.conn.RemoteAddr())
-	//c.Close()
 }
 
 func (c *Client) handleSubscribed(command *redisproto.Command) (err error) {
@@ -108,8 +104,7 @@ func (c *Client) handleSubscribed(command *redisproto.Command) (err error) {
 	c.currentSubChannel = c.broadcast.GetOrCreate(c.subChanName)
 	go c.handleBroadcastData()
 	c.currentSubChannel.AddReceiver(c)
-	var count int64 = 1
-	c.redisWriter.WriteObjects(subscribe, command.Get(1), count)
+	c.redisWriter.WriteObjects(subscribe, command.Get(1), int64(1))
 	err = c.redisWriter.Flush()
 	return
 }
