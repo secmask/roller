@@ -142,15 +142,18 @@ func (c *Client) handleInfo() error {
 }
 
 func (c *Client) Run() {
-	for {
-		command, err := c.parser.ReadCommand()
+	defer c.Close()
+	var err error = nil
+	var command *redisproto.Command
+	for err == nil {
+		command, err = c.parser.ReadCommand()
 		if err != nil {
 			_, ok := err.(*redisproto.ProtocolError)
 			if ok {
 				err = c.redisWriter.WriteError(err.Error())
 				err = c.redisWriter.Flush()
 			} else {
-				err = c.Close()
+				//err = c.Close()
 				break
 			}
 		}
@@ -170,7 +173,7 @@ func (c *Client) Run() {
 				return
 			}
 		case "QUIT":
-			c.Close()
+			//c.Close()
 			return
 		case "INFO":
 			err = c.handleInfo()

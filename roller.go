@@ -4,6 +4,8 @@ import (
 	"flag"
 	"log"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -30,8 +32,14 @@ func IsDirectory(path string) bool {
 	}
 }
 
+var (
+	debugAddr string
+)
+
 func main() {
 	logDir := flag.String("d", "stdout", "log dir")
+
+	flag.StringVar(&debugAddr, "x", "", "enable port at address")
 	bindAddress := flag.String("l", "127.0.0.1:6380", "Listen address")
 	flag.Parse()
 	if *logDir != "stdout" {
@@ -47,6 +55,19 @@ func main() {
 	listener, err := net.Listen("tcp", *bindAddress)
 	if err != nil {
 		panic(err)
+	}
+
+	if debugAddr != "" {
+		go func() {
+			if l, err := net.Listen("tcp", debugAddr); err != nil {
+				log.Println(err)
+				return
+			} else {
+				//_,p,_ := net.SplitHostPort(l.Addr().String())
+				//glog.Infoln("http://localhost:"+p+"/debug/pprof/goroutine?debug=2")
+				http.Serve(l, nil)
+			}
+		}()
 	}
 
 	for {
