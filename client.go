@@ -124,13 +124,14 @@ func (c *Client) handlePublish(command *redisproto.Command) (err error) {
 	}
 
 	temBuff := bytes.NewBuffer(make([]byte, 0, 2048))
-	temBuff.Cap()
 	rWriter := redisproto.NewWriter(temBuff)
 	rWriter.WriteBulks(message, command.Get(1), data)
 	b := c.broadcast.GetOrCreate(sc)
 	b.Send(temBuff.Bytes())
 	err = c.redisWriter.WriteInt(1)
-	err = c.redisWriter.Flush()
+	if command.IsLast() {
+		err = c.redisWriter.Flush()
+	}
 	statisticsSnapshot.Add(sc, 1)
 	return
 }
